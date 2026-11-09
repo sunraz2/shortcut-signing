@@ -1,0 +1,28 @@
+name: sign-shortcut
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main ]
+jobs:
+  sign:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: env info
+        run: |
+          sw_vers
+          which shortcuts || true
+          ls -l /usr/bin/shortcuts 2>/dev/null || echo "no shortcuts cli"
+          shortcuts --help 2>&1 | head -20 || true
+      - name: try sign
+        run: |
+          mkdir -p signed
+          shortcuts sign --mode anyone --input shortcut/hello.shortcut --output signed/hello.shortcut 2>&1 | tee sign.log || echo "SIGN_FAILED rc=$?"
+          ls -l signed || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: signed-shortcut
+          path: |
+            signed/
+            sign.log
